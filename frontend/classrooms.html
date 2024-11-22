@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Management</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Show and hide sections based on button clicks
+      const viewBtn = document.getElementById('view-classrooms-btn');
+      const addBtn = document.getElementById('add-classroom-btn');
+      const deleteBtn = document.getElementById('delete-classroom-btn');
+      const updateBtn = document.getElementById('update-classroom-btn');
+      
+      const viewSection = document.getElementById('view-classrooms-section');
+      const addUpdateSection = document.getElementById('add-update-classroom-section');
+      const deleteSection = document.getElementById('delete-classroom-section');
+      
+      viewBtn.addEventListener('click', () => {
+        viewSection.style.display = 'block';
+        addUpdateSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        loadClassrooms(); // Fetch classrooms when viewing
+      });
+
+      addBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("classroom-form-title").textContent = "Add Classroom"; // Set form title for adding
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        deleteSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        addUpdateSection.style.display = 'none';
+      });
+
+      updateBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("classroom-form-title").textContent = "Update Classroom"; // Set form title for updating
+      });
+
+      // Fetch Classrooms and render them
+      function loadClassrooms() {
+        fetch('/api/classrooms')
+          .then(response => response.json())
+          .then(data => {
+            const classroomTable = document.getElementById('classroom-table');
+            classroomTable.innerHTML = '';
+            data.classrooms.forEach(classroom => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${classroom.classroom_id}</td>
+                <td>${classroom.room_number}</td>
+                <td>${classroom.capacity}</td>
+                <td>${classroom.building}</td>
+                <td>
+                  <button onclick="editClassroom(${classroom.classroom_id})">Edit</button>
+                  <button onclick="deleteClassroom(${classroom.classroom_id})">Delete</button>
+                </td>
+              `;
+              classroomTable.appendChild(row);
+            });
+          });
+      }
+
+      // Delete Classroom
+      function deleteClassroom(classroomId) {
+        fetch(`/api/classrooms/${classroomId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadClassrooms(); // Reload classrooms after delete
+        });
+      }
+
+      // Fill form with classroom data for editing
+      function editClassroom(classroomId) {
+        fetch(`/api/classrooms/${classroomId}`)
+          .then(response => response.json())
+          .then(data => {
+            const form = document.getElementById('classroom-form');
+            form.classroom_id.value = data.classroom_id;
+            form.room_number.value = data.room_number;
+            form.capacity.value = data.capacity;
+            form.building.value = data.building;
+
+            addUpdateSection.style.display = 'block';
+            viewSection.style.display = 'none';
+            deleteSection.style.display = 'none';
+            document.getElementById("classroom-form-title").textContent = "Update Classroom";
+          });
+      }
+
+      // Submit Form for Adding or Updating Classroom
+      const classroomForm = document.getElementById('classroom-form');
+      classroomForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const data = new FormData(classroomForm);
+        const classroomId = data.get('classroom_id');
+        const method = classroomId ? 'PUT' : 'POST';
+        const url = classroomId ? `/api/classrooms/${classroomId}` : '/api/classrooms';
+
+        fetch(url, {
+          method: method,
+          body: new URLSearchParams(data),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadClassrooms(); // Reload classrooms after submission
+        });
+      });
+
+      // Handle Deletion Form Submission
+      const deleteClassroomForm = document.getElementById('delete-classroom-form');
+      deleteClassroomForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const classroomId = document.getElementById('delete_classroom_id').value;
+        fetch(`/api/classrooms/${classroomId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadClassrooms(); // Reload classrooms after deletion
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Classroom Management</h1>
+
+  <!-- Buttons for Operations -->
+  <div>
+    <button id="view-classrooms-btn">View Classrooms</button>
+    <button id="add-classroom-btn">Add Classroom</button>
+    <button id="delete-classroom-btn">Delete Classroom</button>
+    <button id="update-classroom-btn">Update Classroom</button>
+  </div>
+
+  <!-- Table for Viewing Classrooms -->
+  <div id="view-classrooms-section" style="display: none;">
+    <h2>Classrooms</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Room Number</th>
+          <th>Capacity</th>
+          <th>Building</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="classroom-table">
+        <!-- Classroom data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form for Adding/Updating Classrooms -->
+  <div id="add-update-classroom-section" style="display: none;">
+    <h2 id="classroom-form-title">Add Classroom</h2>
+    <form id="classroom-form">
+      <input type="hidden" id="classroom_id" name="classroom_id">
+      <label for="room_number">Room Number:</label>
+      <input type="text" id="room_number" name="room_number" required><br>
+
+      <label for="capacity">Capacity:</label>
+      <input type="number" id="capacity" name="capacity" required><br>
+
+      <label for="building">Building:</label>
+      <input type="text" id="building" name="building" required><br>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Section for Deleting Classrooms -->
+  <div id="delete-classroom-section" style="display: none;">
+    <h2>Delete Classroom</h2>
+    <form id="delete-classroom-form">
+      <label for="delete_classroom_id">Classroom ID:</label>
+      <input type="number" id="delete_classroom_id" name="delete_classroom_id" required>
+      <button type="submit">Delete</button>
+    </form>
+  </div>
+</body>
+</html>

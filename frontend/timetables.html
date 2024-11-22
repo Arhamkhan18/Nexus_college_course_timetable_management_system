@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timetable Management</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Show and hide sections based on button clicks
+      const viewBtn = document.getElementById('view-timetables-btn');
+      const addBtn = document.getElementById('add-timetable-btn');
+      const deleteBtn = document.getElementById('delete-timetable-btn');
+      const updateBtn = document.getElementById('update-timetable-btn');
+      
+      const viewSection = document.getElementById('view-timetables-section');
+      const addUpdateSection = document.getElementById('add-update-timetable-section');
+      const deleteSection = document.getElementById('delete-timetable-section');
+      
+      viewBtn.addEventListener('click', () => {
+        viewSection.style.display = 'block';
+        addUpdateSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        loadTimetables(); // Fetch timetables when viewing
+      });
+
+      addBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("form-title").textContent = "Add Timetable"; // Set the form title
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        deleteSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        addUpdateSection.style.display = 'none';
+      });
+
+      updateBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("form-title").textContent = "Update Timetable"; // Set form title for updating
+      });
+
+      // Fetch Timetables and render them
+      function loadTimetables() {
+        fetch('/api/timetables')
+          .then(response => response.json())
+          .then(data => {
+            const timetableTable = document.getElementById('timetable-table');
+            timetableTable.innerHTML = '';
+            data.timetables.forEach(timetable => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${timetable.course}</td>
+                <td>${timetable.instructor}</td>
+                <td>${timetable.classroom}</td>
+                <td>${timetable.day_of_week}</td>
+                <td>${timetable.start_time}</td>
+                <td>${timetable.end_time}</td>
+                <td>
+                  <button onclick="editTimetable(${timetable.timetable_id})">Edit</button>
+                  <button onclick="deleteTimetable(${timetable.timetable_id})">Delete</button>
+                </td>
+              `;
+              timetableTable.appendChild(row);
+            });
+          });
+      }
+
+      // Delete Timetable
+      function deleteTimetable(timetableId) {
+        fetch(`/api/timetables/${timetableId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadTimetables(); // Reload timetables after delete
+        });
+      }
+
+      // Fill form with timetable data for editing
+      function editTimetable(timetableId) {
+        fetch(`/api/timetables/${timetableId}`)
+          .then(response => response.json())
+          .then(data => {
+            const form = document.getElementById('timetable-form');
+            form.timetable_id.value = data.timetable_id;
+            form.course_id.value = data.course_id;
+            form.instructor_id.value = data.instructor_id;
+            form.classroom_id.value = data.classroom_id;
+            form.day_of_week.value = data.day_of_week;
+            form.start_time.value = data.start_time;
+            form.end_time.value = data.end_time;
+
+            addUpdateSection.style.display = 'block';
+            viewSection.style.display = 'none';
+            deleteSection.style.display = 'none';
+            document.getElementById("form-title").textContent = "Update Timetable";
+          });
+      }
+
+      // Submit Form for Adding or Updating Timetable
+      const timetableForm = document.getElementById('timetable-form');
+      timetableForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const data = new FormData(timetableForm);
+        const timetableId = data.get('timetable_id');
+        const method = timetableId ? 'PUT' : 'POST';
+        const url = timetableId ? `/api/timetables/${timetableId}` : '/api/timetables';
+
+        fetch(url, {
+          method: method,
+          body: new URLSearchParams(data),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadTimetables(); // Reload timetables after submission
+        });
+      });
+
+      // Handle Deletion Form Submission
+      const deleteTimetableForm = document.getElementById('delete-timetable-form');
+      deleteTimetableForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const timetableId = document.getElementById('delete_timetable_id').value;
+        fetch(`/api/timetables/${timetableId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadTimetables(); // Reload timetables after deletion
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Timetable Management</h1>
+
+  <!-- Buttons for Operations -->
+  <div>
+    <button id="view-timetables-btn">View Timetables</button>
+    <button id="add-timetable-btn">Add Timetable</button>
+    <button id="delete-timetable-btn">Delete Timetable</button>
+    <button id="update-timetable-btn">Update Timetable</button>
+  </div>
+
+  <!-- Table for Viewing Timetables -->
+  <div id="view-timetables-section" style="display: none;">
+    <h2>Timetables</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Instructor</th>
+          <th>Classroom</th>
+          <th>Day</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="timetable-table">
+        <!-- Timetable data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form for Adding/Updating Timetables -->
+  <div id="add-update-timetable-section" style="display: none;">
+    <h2 id="form-title">Add Timetable</h2>
+    <form id="timetable-form">
+      <input type="hidden" id="timetable_id" name="timetable_id">
+      <label for="course_id">Course:</label>
+      <select id="course_id" name="course_id" required></select><br>
+      <label for="instructor_id">Instructor:</label>
+      <select id="instructor_id" name="instructor_id" required></select><br>
+      <label for="classroom_id">Classroom:</label>
+      <select id="classroom_id" name="classroom_id" required></select><br>
+      <label for="day_of_week">Day of Week:</label>
+      <input type="text" id="day_of_week" name="day_of_week" placeholder="e.g., Monday" required><br>
+      <label for="start_time">Start Time:</label>
+      <input type="time" id="start_time" name="start_time" required><br>
+      <label for="end_time">End Time:</label>
+      <input type="time" id="end_time" name="end_time" required><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Section for Deleting Timetables -->
+  <div id="delete-timetable-section" style="display: none;">
+    <h2>Delete Timetable</h2>
+    <form id="delete-timetable-form">
+      <label for="delete_timetable_id">Timetable ID:</label>
+      <input type="number" id="delete_timetable_id" name="delete_timetable_id" required>
+      <button type="submit">Delete</button>
+    </form>
+  </div>
+</body>
+</html>

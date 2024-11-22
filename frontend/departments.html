@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Management</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Show and hide sections based on button clicks
+      const viewBtn = document.getElementById('view-departments-btn');
+      const addBtn = document.getElementById('add-department-btn');
+      const deleteBtn = document.getElementById('delete-department-btn');
+      const updateBtn = document.getElementById('update-department-btn');
+      
+      const viewSection = document.getElementById('view-departments-section');
+      const addUpdateSection = document.getElementById('add-update-department-section');
+      const deleteSection = document.getElementById('delete-department-section');
+      
+      viewBtn.addEventListener('click', () => {
+        viewSection.style.display = 'block';
+        addUpdateSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        loadDepartments(); // Fetch departments when viewing
+      });
+
+      addBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("department-form-title").textContent = "Add Department"; // Set the form title
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        deleteSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        addUpdateSection.style.display = 'none';
+      });
+
+      updateBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("department-form-title").textContent = "Update Department"; // Set form title for updating
+      });
+
+      // Fetch Departments and render them
+      function loadDepartments() {
+        fetch('/api/departments')
+          .then(response => response.json())
+          .then(data => {
+            const departmentTable = document.getElementById('department-table');
+            departmentTable.innerHTML = '';
+            data.departments.forEach(department => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${department.department_id}</td>
+                <td>${department.department_name}</td>
+                <td>
+                  <button onclick="editDepartment(${department.department_id})">Edit</button>
+                  <button onclick="deleteDepartment(${department.department_id})">Delete</button>
+                </td>
+              `;
+              departmentTable.appendChild(row);
+            });
+          });
+      }
+
+      // Delete Department
+      function deleteDepartment(departmentId) {
+        fetch(`/api/departments/${departmentId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadDepartments(); // Reload departments after delete
+        });
+      }
+
+      // Fill form with department data for editing
+      function editDepartment(departmentId) {
+        fetch(`/api/departments/${departmentId}`)
+          .then(response => response.json())
+          .then(data => {
+            const form = document.getElementById('department-form');
+            form.department_id.value = data.department_id;
+            form.department_name.value = data.department_name;
+
+            addUpdateSection.style.display = 'block';
+            viewSection.style.display = 'none';
+            deleteSection.style.display = 'none';
+            document.getElementById("department-form-title").textContent = "Update Department";
+          });
+      }
+
+      // Submit Form for Adding or Updating Department
+      const departmentForm = document.getElementById('department-form');
+      departmentForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const data = new FormData(departmentForm);
+        const departmentId = data.get('department_id');
+        const method = departmentId ? 'PUT' : 'POST';
+        const url = departmentId ? `/api/departments/${departmentId}` : '/api/departments';
+
+        fetch(url, {
+          method: method,
+          body: new URLSearchParams(data),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadDepartments(); // Reload departments after submission
+        });
+      });
+
+      // Handle Deletion Form Submission
+      const deleteDepartmentForm = document.getElementById('delete-department-form');
+      deleteDepartmentForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const departmentId = document.getElementById('delete_department_id').value;
+        fetch(`/api/departments/${departmentId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadDepartments(); // Reload departments after deletion
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Department Management</h1>
+
+  <!-- Buttons for Operations -->
+  <div>
+    <button id="view-departments-btn">View Departments</button>
+    <button id="add-department-btn">Add Department</button>
+    <button id="delete-department-btn">Delete Department</button>
+    <button id="update-department-btn">Update Department</button>
+  </div>
+
+  <!-- Table for Viewing Departments -->
+  <div id="view-departments-section" style="display: none;">
+    <h2>Departments</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Department Name</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="department-table">
+        <!-- Department data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form for Adding/Updating Departments -->
+  <div id="add-update-department-section" style="display: none;">
+    <h2 id="department-form-title">Add Department</h2>
+    <form id="department-form">
+      <input type="hidden" id="department_id" name="department_id">
+      <label for="department_name">Department Name:</label>
+      <input type="text" id="department_name" name="department_name" required><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Section for Deleting Departments -->
+  <div id="delete-department-section" style="display: none;">
+    <h2>Delete Department</h2>
+    <form id="delete-department-form">
+      <label for="delete_department_id">Department ID:</label>
+      <input type="number" id="delete_department_id" name="delete_department_id" required>
+      <button type="submit">Delete</button>
+    </form>
+  </div>
+</body>
+</html>

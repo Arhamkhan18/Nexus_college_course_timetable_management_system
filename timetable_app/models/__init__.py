@@ -1,0 +1,5 @@
+from timetable_app.models.timetable_model import Timetable
+from timetable_app.models.classroom_model import Classroom
+from timetable_app.models.course_model import Course
+from timetable_app.models.instructor_model import Instructor
+from timetable_app.models.department_model import Department

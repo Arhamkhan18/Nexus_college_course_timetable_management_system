@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}">
+    <style>
+        /* Inline styles for specific adjustments */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            background-color: #f1f1f1;
+            padding: 10px 0;
+            margin: 0;
+        }
+        .tabs a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .tabs a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            text-align: center;
+            margin: 20px;
+        }
+        .content h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .content p {
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Timetable Management System</h1>
+    </header>
+    <nav class="tabs">
+        <a href="{{ url_for('timetables') }}">Timetables</a>
+        <a href="{{ url_for('classrooms') }}">Classrooms</a>
+        <a href="{{ url_for('courses') }}">Courses</a>
+        <a href="{{ url_for('instructors') }}">Instructors</a>
+        <a href="{{ url_for('departments') }}">Departments</a>
+    </nav>
+    <div class="content">
+        <h1>Welcome to the Timetable Management System</h1>
+        <p>Select a tab to manage the respective data.</p>
+    </div>
+</body>
+</html>

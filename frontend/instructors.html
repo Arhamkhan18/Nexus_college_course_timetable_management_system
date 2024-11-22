@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructor Management</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Show and hide sections based on button clicks
+      const viewBtn = document.getElementById('view-instructors-btn');
+      const addBtn = document.getElementById('add-instructor-btn');
+      const deleteBtn = document.getElementById('delete-instructor-btn');
+      const updateBtn = document.getElementById('update-instructor-btn');
+      
+      const viewSection = document.getElementById('view-instructors-section');
+      const addUpdateSection = document.getElementById('add-update-instructor-section');
+      const deleteSection = document.getElementById('delete-instructor-section');
+      
+      viewBtn.addEventListener('click', () => {
+        viewSection.style.display = 'block';
+        addUpdateSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        loadInstructors(); // Fetch instructors when viewing
+      });
+
+      addBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("instructor-form-title").textContent = "Add Instructor"; // Set the form title
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        deleteSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        addUpdateSection.style.display = 'none';
+      });
+
+      updateBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("instructor-form-title").textContent = "Update Instructor"; // Set form title for updating
+      });
+
+      // Fetch Instructors and render them
+      function loadInstructors() {
+        fetch('/api/instructors')
+          .then(response => response.json())
+          .then(data => {
+            const instructorTable = document.getElementById('instructor-table');
+            instructorTable.innerHTML = '';
+            data.instructors.forEach(instructor => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${instructor.instructor_id}</td>
+                <td>${instructor.instructor_name}</td>
+                <td>${instructor.instructor_email}</td>
+                <td>${instructor.department}</td>
+                <td>
+                  <button onclick="editInstructor(${instructor.instructor_id})">Edit</button>
+                  <button onclick="deleteInstructor(${instructor.instructor_id})">Delete</button>
+                </td>
+              `;
+              instructorTable.appendChild(row);
+            });
+          });
+      }
+
+      // Delete Instructor
+      function deleteInstructor(instructorId) {
+        fetch(`/api/instructors/${instructorId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadInstructors(); // Reload instructors after delete
+        });
+      }
+
+      // Fill form with instructor data for editing
+      function editInstructor(instructorId) {
+        fetch(`/api/instructors/${instructorId}`)
+          .then(response => response.json())
+          .then(data => {
+            const form = document.getElementById('instructor-form');
+            form.instructor_id.value = data.instructor_id;
+            form.instructor_name.value = data.instructor_name;
+            form.instructor_email.value = data.instructor_email;
+            form.department_id.value = data.department_id;
+
+            addUpdateSection.style.display = 'block';
+            viewSection.style.display = 'none';
+            deleteSection.style.display = 'none';
+            document.getElementById("instructor-form-title").textContent = "Update Instructor";
+          });
+      }
+
+      // Submit Form for Adding or Updating Instructor
+      const instructorForm = document.getElementById('instructor-form');
+      instructorForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const data = new FormData(instructorForm);
+        const instructorId = data.get('instructor_id');
+        const method = instructorId ? 'PUT' : 'POST';
+        const url = instructorId ? `/api/instructors/${instructorId}` : '/api/instructors';
+
+        fetch(url, {
+          method: method,
+          body: new URLSearchParams(data),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadInstructors(); // Reload instructors after submission
+        });
+      });
+
+      // Handle Deletion Form Submission
+      const deleteInstructorForm = document.getElementById('delete-instructor-form');
+      deleteInstructorForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const instructorId = document.getElementById('delete_instructor_id').value;
+        fetch(`/api/instructors/${instructorId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadInstructors(); // Reload instructors after deletion
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Instructor Management</h1>
+
+  <!-- Buttons for Operations -->
+  <div>
+    <button id="view-instructors-btn">View Instructors</button>
+    <button id="add-instructor-btn">Add Instructor</button>
+    <button id="delete-instructor-btn">Delete Instructor</button>
+    <button id="update-instructor-btn">Update Instructor</button>
+  </div>
+
+  <!-- Table for Viewing Instructors -->
+  <div id="view-instructors-section" style="display: none;">
+    <h2>Instructors</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="instructor-table">
+        <!-- Instructor data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form for Adding/Updating Instructors -->
+  <div id="add-update-instructor-section" style="display: none;">
+    <h2 id="instructor-form-title">Add Instructor</h2>
+    <form id="instructor-form">
+      <input type="hidden" id="instructor_id" name="instructor_id">
+      <label for="instructor_name">Name:</label>
+      <input type="text" id="instructor_name" name="instructor_name" required><br>
+      <label for="instructor_email">Email:</label>
+      <input type="email" id="instructor_email" name="instructor_email" required><br>
+      <label for="department_id">Department:</label>
+      <select id="department_id" name="department_id" required></select><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Section for Deleting Instructors -->
+  <div id="delete-instructor-section" style="display: none;">
+    <h2>Delete Instructor</h2>
+    <form id="delete-instructor-form">
+      <label for="delete_instructor_id">Instructor ID:</label>
+      <input type="number" id="delete_instructor_id" name="delete_instructor_id" required>
+      <button type="submit">Delete</button>
+    </form>
+  </div>
+</body>
+</html>

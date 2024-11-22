@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Management</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Show and hide sections based on button clicks
+      const viewBtn = document.getElementById('view-courses-btn');
+      const addBtn = document.getElementById('add-course-btn');
+      const deleteBtn = document.getElementById('delete-course-btn');
+      const updateBtn = document.getElementById('update-course-btn');
+      
+      const viewSection = document.getElementById('view-courses-section');
+      const addUpdateSection = document.getElementById('add-update-course-section');
+      const deleteSection = document.getElementById('delete-course-section');
+      
+      viewBtn.addEventListener('click', () => {
+        viewSection.style.display = 'block';
+        addUpdateSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        loadCourses(); // Fetch courses when viewing
+      });
+
+      addBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("course-form-title").textContent = "Add Course"; // Set form title for adding
+        loadDepartmentsAndInstructors(); // Load departments and instructors when adding
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        deleteSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        addUpdateSection.style.display = 'none';
+      });
+
+      updateBtn.addEventListener('click', () => {
+        addUpdateSection.style.display = 'block';
+        viewSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        document.getElementById("course-form-title").textContent = "Update Course"; // Set form title for updating
+        loadDepartmentsAndInstructors(); // Load departments and instructors when updating
+      });
+
+      // Fetch Courses and render them
+      function loadCourses() {
+        fetch('/api/courses')
+          .then(response => response.json())
+          .then(data => {
+            const courseTable = document.getElementById('course-table');
+            courseTable.innerHTML = '';
+            data.courses.forEach(course => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${course.course_id}</td>
+                <td>${course.course_name}</td>
+                <td>${course.credits}</td>
+                <td>${course.department_name}</td>
+                <td>${course.instructor_name}</td>
+                <td>
+                  <button onclick="editCourse(${course.course_id})">Edit</button>
+                  <button onclick="deleteCourse(${course.course_id})">Delete</button>
+                </td>
+              `;
+              courseTable.appendChild(row);
+            });
+          });
+      }
+
+      // Delete Course
+      function deleteCourse(courseId) {
+        fetch(`/api/courses/${courseId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadCourses(); // Reload courses after delete
+        });
+      }
+
+      // Fill form with course data for editing
+      function editCourse(courseId) {
+        fetch(`/api/courses/${courseId}`)
+          .then(response => response.json())
+          .then(data => {
+            const form = document.getElementById('course-form');
+            form.course_id.value = data.course_id;
+            form.course_name.value = data.course_name;
+            form.credits.value = data.credits;
+            form.department_id.value = data.department_id;
+            form.instructor_id.value = data.instructor_id;
+
+            addUpdateSection.style.display = 'block';
+            viewSection.style.display = 'none';
+            deleteSection.style.display = 'none';
+            document.getElementById("course-form-title").textContent = "Update Course";
+          });
+      }
+
+      // Load Departments and Instructors into form
+      function loadDepartmentsAndInstructors() {
+        // Fetch departments
+        fetch('/api/departments')
+          .then(response => response.json())
+          .then(data => {
+            const departmentSelect = document.getElementById('department_id');
+            departmentSelect.innerHTML = '';
+            data.departments.forEach(department => {
+              const option = document.createElement('option');
+              option.value = department.department_id;
+              option.textContent = department.department_name;
+              departmentSelect.appendChild(option);
+            });
+          });
+
+        // Fetch instructors
+        fetch('/api/instructors')
+          .then(response => response.json())
+          .then(data => {
+            const instructorSelect = document.getElementById('instructor_id');
+            instructorSelect.innerHTML = '';
+            data.instructors.forEach(instructor => {
+              const option = document.createElement('option');
+              option.value = instructor.instructor_id;
+              option.textContent = `${instructor.first_name} ${instructor.last_name}`;
+              instructorSelect.appendChild(option);
+            });
+          });
+      }
+
+      // Submit Form for Adding or Updating Course
+      const courseForm = document.getElementById('course-form');
+      courseForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const data = new FormData(courseForm);
+        const courseId = data.get('course_id');
+        const method = courseId ? 'PUT' : 'POST';
+        const url = courseId ? `/api/courses/${courseId}` : '/api/courses';
+
+        fetch(url, {
+          method: method,
+          body: new URLSearchParams(data),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadCourses(); // Reload courses after submission
+        });
+      });
+
+      // Handle Deletion Form Submission
+      const deleteCourseForm = document.getElementById('delete-course-form');
+      deleteCourseForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const courseId = document.getElementById('delete_course_id').value;
+        fetch(`/api/courses/${courseId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          loadCourses(); // Reload courses after deletion
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Course Management</h1>
+
+  <!-- Buttons for Operations -->
+  <div>
+    <button id="view-courses-btn">View Courses</button>
+    <button id="add-course-btn">Add Course</button>
+    <button id="delete-course-btn">Delete Course</button>
+    <button id="update-course-btn">Update Course</button>
+  </div>
+
+  <!-- Table for Viewing Courses -->
+  <div id="view-courses-section" style="display: none;">
+    <h2>Courses</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Course Name</th>
+          <th>Credits</th>
+          <th>Department</th>
+          <th>Instructor</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="course-table">
+        <!-- Course data will be dynamically inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form for Adding/Updating Courses -->
+  <div id="add-update-course-section" style="display: none;">
+    <h2 id="course-form-title">Add Course</h2>
+    <form id="course-form">
+      <input type="hidden" id="course_id" name="course_id">
+      <label for="course_name">Course Name:</label>
+      <input type="text" id="course_name" name="course_name" required><br>
+
+      <label for="credits">Credits:</label>
+      <input type="number" id="credits" name="credits" required><br>
+
+      <label for="department_id">Department:</label>
+      <select id="department_id" name="department_id" required></select><br>
+
+      <label for="instructor_id">Instructor:</label>
+      <select id="instructor_id" name="instructor_id" required></select><br>
+
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Section for Deleting Courses -->
+  <div id="delete-course-section" style="display: none;">
+    <h2>Delete Course</h2>
+    <form id="delete-course-form">
+      <label for="delete_course_id">Course ID:</label>
+      <input type="number" id="delete_course_id" name="delete_course_id" required>
+      <button type="submit">Delete</button>
+    </form>
+  </div>
+</body>
+</html>
